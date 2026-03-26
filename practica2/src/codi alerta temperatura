@@ -1,0 +1,28 @@
+const int PIN_LM35 = 34;
+const int PIN_LED  = 25;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PIN_LED, OUTPUT);
+}
+
+void loop() {
+  int raw = analogRead(34);
+  float voltaje = raw * (3.3 / 4095.0);
+  float temperatura = voltaje / 0.01;
+
+  Serial.print("Temperatura: ");
+  Serial.print(temperatura);
+  Serial.println(" °C");
+
+  if (temperatura > 18) {
+    digitalWrite(PIN_LED, HIGH);
+    Serial.println("⚠️ ADVERTENCIA: La temperatura ha superado los 18 °C");
+  } else {
+    digitalWrite(PIN_LED, LOW);
+    Serial.println("Temperatura dentro del rango normal.");
+  }
+
+  Serial.println("---------------------------");  
+  delay(2000);
+}
