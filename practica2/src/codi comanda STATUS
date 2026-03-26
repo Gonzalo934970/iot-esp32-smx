@@ -1,0 +1,42 @@
+const int PIN_LM35 = 34;
+const int PIN_LED  = 25;
+const int PIN_LDR  = 2;
+
+const float VOLTAJE_REF = 3.3;
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  pinMode(PIN_LED, OUTPUT);
+
+  Serial.println("Iniciant lectura de LM35 i LDR...");
+}
+
+void loop() {
+  // --- LECTURA LM35 ---
+  int rawLM35 = analogRead(PIN_LM35);
+  float voltaje = rawLM35 * (VOLTAJE_REF / 4095.0);
+  float temperatura = voltaje / 0.01;
+
+  Serial.print("Temperatura: ");
+  Serial.print(temperatura);
+  Serial.println(" °C");
+
+  if (temperatura > 19) {
+    digitalWrite(PIN_LED, HIGH);
+    Serial.println("LED ON (Temperatura > 19°C)");
+  } else {
+    digitalWrite(PIN_LED, LOW);
+    Serial.println("LED OFF (Temperatura <= 19°C)");
+  }
+
+  int valorLDR = analogRead(PIN_LDR);
+
+  Serial.print("Llum detectada (LDR): ");
+  Serial.println(valorLDR);
+
+  Serial.println("-----------------------------");
+
+  delay(2000);
+}
