@@ -1,0 +1,84 @@
+#include <WiFi.h>
+#include <WebServer.h>
+
+const char* ssid = "ESP32-CPD";
+const char* password = "12345678";
+
+WebServer server(80);
+
+const int pinLDR = 35;
+const int pinLM35 = 34;
+
+void enviarPaginaPrincipal() {
+  int valorLDR = analogRead(pinLDR);
+  int lecturaLM35 = analogRead(pinLM35);
+
+  float voltaje = lecturaLM35 * (3.3 / 4095.0);
+  float tempC = voltaje * 100.0;
+
+  String html = "<!DOCTYPE html><html lang='ca'><head>";
+  html += "<meta charset='UTF-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+  html += "<meta http-equiv='refresh' content='5'>";
+  html += "<title>Monitor CPD</title>";
+  html += "<style>";
+  html += "body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#0f172a,#1e3a8a);color:white;text-align:center;}";
+  html += ".container{padding:25px;}";
+  html += "h1{margin-top:20px;font-size:30px;}";
+  html += ".sub{color:#cbd5e1;margin-bottom:25px;}";
+  html += ".cards{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;}";
+  html += ".card{background:rgba(255,255,255,0.12);padding:25px;border-radius:18px;min-width:220px;box-shadow:0 8px 25px rgba(0,0,0,0.3);}";
+  html += ".card h2{margin:0 0 10px 0;font-size:22px;}";
+  html += ".valor{font-size:34px;font-weight:bold;margin:10px 0;}";
+  html += ".desc{font-size:14px;color:#dbeafe;}";
+  html += ".footer{margin-top:30px;font-size:13px;color:#cbd5e1;}";
+  html += "</style></head><body>";
+
+  html += "<div class='container'>";
+  html += "<h1>Dashboard CPD</h1>";
+  html += "<p class='sub'>Monitorització en temps real</p>";
+
+  html += "<div class='cards'>";
+
+  html += "<div class='card'>";
+  html += "<h2>Temperatura</h2>";
+  html += "<div class='valor'>" + String(tempC, 1) + " °C</div>";
+  html += "<div class='desc'>Sensor LM35</div>";
+  html += "</div>";
+
+  html += "<div class='card'>";
+  html += "<h2>Llum</h2>";
+  html += "<div class='valor'>" + String(valorLDR) + "</div>";
+  html += "<div class='desc'>Sensor LDR</div>";
+  html += "</div>";
+
+  html += "</div>";
+  html += "<div class='footer'>Actualització automàtica cada 5 segons · 192.168.4.1</div>";
+  html += "</div>";
+
+  html += "</body></html>";
+
+  server.send(200, "text/html", html);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(pinLDR, INPUT);
+  pinMode(pinLM35, INPUT);
+
+  analogReadResolution(12);
+
+  WiFi.softAP(ssid, password);
+
+  Serial.println("Punt d'acces creat");
+  Serial.print("IP AP: ");
+  Serial.println(WiFi.softAPIP());
+
+  server.on("/", enviarPaginaPrincipal);
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+}
