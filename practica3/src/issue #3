@@ -1,0 +1,59 @@
+#include <WiFi.h>
+#include <WebServer.h>
+
+const char* ssid = "ESP32-CPD";
+const char* password = "12345678";
+
+WebServer server(80);
+
+void enviarPaginaPrincipal() {
+  String html = "<!DOCTYPE html>";
+  html += "<html lang='ca'>";
+  html += "<head>";
+  html += "<meta charset='UTF-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+  html += "<title>ESP32 - Monitor CPD</title>";
+  html += "<style>";
+  html += "body{margin:0;padding:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#0f172a,#1e3a8a);color:white;text-align:center;}";
+  html += ".container{display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;}";
+  html += ".card{background:rgba(255,255,255,0.12);backdrop-filter:blur(8px);padding:30px;border-radius:20px;max-width:380px;box-shadow:0 8px 25px rgba(0,0,0,0.3);}";
+  html += "h1{margin-top:0;font-size:30px;}";
+  html += "p{font-size:16px;line-height:1.5;}";
+  html += ".badge{display:inline-block;background:#22c55e;color:white;padding:8px 14px;border-radius:999px;font-weight:bold;margin-top:10px;}";
+  html += ".ip{margin-top:15px;font-size:14px;color:#dbeafe;}";
+  html += ".footer{margin-top:20px;font-size:13px;color:#cbd5e1;}";
+  html += "</style>";
+  html += "</head>";
+  html += "<body>";
+  html += "<div class='container'>";
+  html += "<div class='card'>";
+  html += "<h1>Hola, sóc el teu ESP32</h1>";
+  html += "<p>Aquesta és la pàgina principal del servidor web de la pràctica del CPD.</p>";
+  html += "<div class='badge'>Servidor actiu</div>";
+  html += "<p class='ip'>Xarxa WiFi: ESP32-CPD</p>";
+  html += "<p class='ip'>Adreça: 192.168.4.1</p>";
+  html += "<div class='footer'>Connecta't amb el mòbil a la xarxa WiFi de la placa i obre aquesta adreça al navegador.</div>";
+  html += "</div>";
+  html += "</div>";
+  html += "</body>";
+  html += "</html>";
+
+  server.send(200, "text/html", html);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.softAP(ssid, password);
+
+  Serial.println("Punt d'acces creat");
+  Serial.print("IP AP: ");
+  Serial.println(WiFi.softAPIP());
+
+  server.on("/", enviarPaginaPrincipal);
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+}
