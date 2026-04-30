@@ -1,0 +1,124 @@
+#include <WiFi.h>
+#include <WebServer.h>
+
+const char* ssid = "ProjectesSMX";
+const char* password = "Hola1234";
+
+WebServer server(80);
+
+const int pinLDR = 35;
+const int pinLM35 = 34;
+const int LED = 27;
+
+// 🔧 reconexión WiFi automática
+void checkWiFi() {
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.disconnect();
+    WiFi.begin(ssid, password);
+  }
+}
+
+void handleRoot() {
+
+  // 🔧 lectura más robusta (media ampliada)
+  long ldrSum = 0;
+  long tempSum = 0;
+
+  for (int i = 0; i < 20; i++) {
+    ldrSum += analogRead(pinLDR);
+    tempSum += analogRead(pinLM35);
+    delay(1);
+  }
+
+  int ldr = ldrSum / 20;
+  int tempRaw = tempSum / 20;
+
+  // 🔧 conversión LM35 estable en ESP32
+  float voltage = (tempRaw / 4095.0) * 3.3;
+  float tempC = voltage * 100.0;
+
+  bool alarma = (tempC > 24.0);
+
+  digitalWrite(LED, alarma ? HIGH : LOW);
+
+  String color = alarma ? "#dc3545" : "#28a745";
+
+  // 🔧 HTML optimizado (menos concatenación)
+  String html = R"rawliteral(
+  <html>
+  <head>
+    <meta charset='UTF-8'>
+    <meta http-equiv='refresh' content='5'>
+    <style>
+      body { font-family: sans-serif; text-align: center; }
+      .card { padding: 20px; color: white; display: inline-block;
+              margin: 10px; border-radius: 10px; }
+    </style>
+  </head>
+  <body>
+    <h1>Monitor CPD</h1>
+
+    <div class='card' style='background:COLOR_TEMP;'>
+      <h3>Temperatura</h3>
+      <p>TEMP °C</p>
+    </div>
+
+    <div class='card' style='background:gray;'>
+      <h3>LDR</h3>
+      <p>LDR_VAL</p>
+    </div>
+
+  </body>
+  </html>
+  )rawliteral";
+
+  html.replace("COLOR_TEMP", color);
+  html.replace("TEMP", String(tempC, 1));
+  html.replace("LDR_VAL", String(ldr));
+
+  server.send(200, "text/html", html);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, LOW);
+
+  // 🔧 configuración ADC correcta ESP32
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  Serial.print("Conectando WiFi");
+
+  unsigned long start = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+
+    // 🔧 evita bucle infinito si falla WiFi
+    if (millis() - start > 15000) {
+      Serial.println("\nFallo WiFi");
+      break;
+    }
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nConectado!");
+    Serial.println(WiFi.localIP());
+  }
+
+  server.on("/", handleRoot);
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+
+  // 🔧 estabilidad del sistema
+  checkWiFi();
+  delay(2);
+}
